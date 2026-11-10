@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ASCII AUDIO VISUALIZER // PRO TERMINAL</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700;800&family=Share+Tech+Mono&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body data-theme="green" class="glow-enabled">
+  <!-- CRT Screen Shader Overlays -->
+  <div class="crt-overlay"></div>
+  <div class="crt-scanline"></div>
+  <div class="crt-vignette"></div>
+
+  <div id="app" class="terminal-container">
+    <!-- Top System Header -->
+    <header class="terminal-header">
+      <div class="header-left">
+        <span class="blinking-led active">●</span>
+        <span class="term-title">ASCII AUDIO VISUALIZER <span class="term-version">[PRO.v2.5]</span></span>
+      </div>
+      <div class="header-center">
+        <span class="badge" id="source-badge">SRC: IDLE</span>
+        <span class="badge" id="mode-badge">MODE: 1.SPECTRUM</span>
+        <span class="badge" id="theme-badge">COLOR: MATRIX GREEN</span>
+      </div>
+      <div class="header-right">
+        <span class="telemetry">SYS: <strong id="sys-clock">--:--:--</strong></span>
+        <span class="telemetry">UP: <strong id="uptime">00:00:00</strong></span>
+        <span class="telemetry">FPS: <strong id="fps-display">60</strong></span>
+        <button id="fullscreen-btn" class="term-btn-icon" title="Toggle Fullscreen [F]" aria-label="Toggle Fullscreen">⛶
+          FULLSCREEN</button>
+      </div>
+    </header>
+
+    <!-- Error/Notice Bar -->
+    <div id="status-banner" class="status-banner hidden">
+      <span class="status-prefix">⚠ [ALERT]:</span>
+      <span id="status-message">Ready</span>
+      <button id="dismiss-status" class="banner-close" aria-label="Dismiss">&times;</button>
+    </div>
+
+    <!-- Main Visualizer Canvas Area -->
+    <main class="visualizer-container" id="visualizer-wrapper">
+      <canvas id="ascii-canvas"></canvas>
+      <div id="drop-overlay" class="drop-overlay hidden">
+        <div class="drop-box">
+          <p class="drop-icon">📂</p>
+          <p class="drop-title">DROP AUDIO FILE HERE</p>
+          <p class="drop-sub">MP3, WAV, FLAC, OGG, AAC, M4A</p>
+        </div>
+      </div>
+    </main>
+
+    <!-- Terminal Controls Dock -->
+    <footer class="terminal-controls">
+      <!-- Row 1: Audio Playback & Primary Source Selection -->
+      <div class="control-row audio-row">
+        <div class="btn-group">
+          <button id="mic-btn" class="term-btn" title="Toggle Live Microphone [M]">
+            <span class="icon">🎤</span> <span class="btn-label">MIC INPUT</span>
+          </button>
+
+          <label class="term-btn file-input-label" for="file-input" title="Upload local audio file">
+            <span class="icon">📁</span> <span class="btn-label" id="file-label">LOAD AUDIO</span>
+            <input type="file" id="file-input" accept="audio/*">
+          </label>
+
+          <button id="demo-btn" class="term-btn highlight-btn"
+            title="Play Built-in Cyberpunk Synth Track (No file needed)">
+            <span class="icon">⚡</span> <span class="btn-label">CYBER SYNTH DEMO</span>
+          </button>
+
+          <button id="play-pause-btn" class="term-btn" disabled title="Play/Pause [Space]">
+            <span class="icon" id="play-icon">▶</span> <span class="btn-label" id="play-label">PLAY</span>
+          </button>
+
+          <button id="stop-btn" class="term-btn" disabled title="Stop playback">
+            <span class="icon">⏹</span> <span class="btn-label">STOP</span>
+          </button>
+        </div>
+
+        <!-- Volume & Audio Track Progress Scrub Bar -->
+        <div class="playback-widget" id="playback-widget">
+          <span class="time-label" id="time-current">00:00</span>
+          <div class="progress-bar-container" id="progress-container" title="Click to seek">
+            <div class="progress-bar" id="progress-bar"></div>
+          </div>
+          <span class="time-label" id="time-total">00:00</span>
+          <div class="volume-slider-group">
+            <span class="slider-icon">🔊</span>
+            <input type="range" id="volume-slider" min="0" max="100" value="85" title="Volume">
+            <span class="slider-val" id="volume-val">85%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Row 2: Visualizer Modes & Advanced DSP Sliders -->
+      <div class="control-row dsp-row">
+        <!-- 5 Visualization Modes -->
+        <div class="mode-select-group">
+          <span class="group-title">MODE [1-5]:</span>
+          <div class="btn-toggle-group">
+            <button class="term-btn-mode active" data-mode="spectrum" title="Spectrum Bars [1]">1:SPECTRUM</button>
+            <button class="term-btn-mode" data-mode="waveform" title="Oscilloscope [2]">2:WAVEFORM</button>
+            <button class="term-btn-mode" data-mode="radial" title="Radial Rings [3]">3:RADIAL</button>
+            <button class="term-btn-mode" data-mode="matrix" title="Matrix Rain [4]">4:MATRIX</button>
+            <button class="term-btn-mode" data-mode="tunnel" title="3D Cyber Tunnel [5]">5:TUNNEL</button>
+          </div>
+        </div>
+
+        <!-- 5 Themes -->
+        <div class="theme-select-group">
+          <span class="group-title">THEME [C]:</span>
+          <div class="color-palette-buttons">
+            <button class="color-swatch-btn active" data-theme="green" title="Matrix Green [C]"></button>
+            <button class="color-swatch-btn" data-theme="cyan" title="Cyber Cyan [C]"></button>
+            <button class="color-swatch-btn" data-theme="amber" title="Phosphor Amber [C]"></button>
+            <button class="color-swatch-btn" data-theme="magenta" title="Synthwave Magenta [C]"></button>
+            <button class="color-swatch-btn" data-theme="white" title="Monochrome White [C]"></button>
+          </div>
+        </div>
+
+        <!-- DSP Tuning Sliders -->
+        <div class="slider-control-group">
+          <div class="slider-item">
+            <label for="gain-slider">GAIN <span id="gain-val">1.2x</span></label>
+            <input type="range" id="gain-slider" min="0.2" max="3.0" step="0.1" value="1.2">
+          </div>
+          <div class="slider-item">
+            <label for="smooth-slider">SMOOTH <span id="smooth-val">0.82</span></label>
+            <input type="range" id="smooth-slider" min="0.10" max="0.95" step="0.01" value="0.82">
+          </div>
+          <div class="slider-item">
+            <label for="bands-slider">BANDS <span id="bands-val">64</span></label>
+            <input type="range" id="bands-slider" min="32" max="128" step="16" value="64">
+          </div>
+          <div class="slider-item">
+            <label for="glow-toggle">CRT GLOW</label>
+            <input type="checkbox" id="glow-toggle" checked>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Shortcuts Legend Bar -->
+      <div class="shortcuts-legend">
+        <span><kbd>SPACE</kbd> Play/Pause</span>
+        <span><kbd>1</kbd> Spectrum</span>
+        <span><kbd>2</kbd> Waveform</span>
+        <span><kbd>3</kbd> Radial</span>
+        <span><kbd>4</kbd> Matrix Rain</span>
+        <span><kbd>5</kbd> 3D Tunnel</span>
+        <span><kbd>C</kbd> Cycle Theme</span>
+        <span><kbd>M</kbd> Toggle Mic</span>
+        <span><kbd>F</kbd> Fullscreen</span>
+      </div>
+    </footer>
+  </div>
+
+  <audio id="audio-element" preload="auto" crossorigin="anonymous"></audio>
+
+  <!-- Modular Scripts -->
+  <script src="audio.js"></script>
+  <script src="visualizer.js"></script>
+  <script src="ui.js"></script>
+  <script src="main.js"></script>
+</body>
+
+</html>
